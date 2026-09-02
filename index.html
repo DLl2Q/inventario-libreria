@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Inventario</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Panel de Inventario</h1>
+    <a class="btn btn-primary" href="registro.html">+ Registrar producto</a>
+  </header>
+
+  <main class="container">
+    <section class="search-panel">
+      <label for="search-input">Buscar por producto</label>
+      <input type="search" id="search-input" placeholder="Ej. Laptop, Mouse, Cable USB..." autocomplete="off" />
+    </section>
+
+    <section class="table-panel">
+      <div id="loading-state" class="state-msg" hidden>Cargando productos...</div>
+      <div id="empty-state" class="state-msg" hidden>No se encontraron productos.</div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>FECHA</th>
+              <th>CANTIDAD</th>
+              <th>EMPRESA</th>
+              <th>DESCRIPCION</th>
+              <th>PRECIO COMPRA</th>
+              <th>PRECIO UNITARIO</th>
+              <th>PRECIO VENTA</th>
+              <th>MARGEN</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="prev-btn" class="btn" type="button">Anterior</button>
+        <span id="page-info"></span>
+        <button id="next-btn" class="btn" type="button">Siguiente</button>
+        <span id="total-info" class="total-info"></span>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/inventario.js"></script>
+</body>
+</html>
