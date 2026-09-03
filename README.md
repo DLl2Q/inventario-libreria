@@ -11,6 +11,7 @@ desde los **Secrets** del repositorio.
 ```
 index.html                   Panel de inventario (página por defecto, protegida por login)
 registro.html                Formulario para registrar un producto comprado (protegida por login)
+carga-masiva.html            Carga masiva de productos vía plantilla de Excel (protegida por login)
 login.html                   Página de acceso (contraseña pública del sitio)
 assets/css/style.css         Estilos
 assets/js/config.js          Placeholders de Supabase y hash de contraseña (se completan en el deploy)
@@ -20,6 +21,7 @@ assets/js/auth.js            Guardia de autenticación y logout, compartidos por
 assets/js/login.js           Lógica de la página de acceso
 assets/js/inventario.js      Lógica del panel de inventario (búsqueda, paginación, edición de precio de venta, borrado)
 assets/js/registro.js        Lógica del formulario de registro
+assets/js/carga-masiva.js    Lógica de descarga de plantilla y carga masiva desde Excel (usa SheetJS)
 sql/schema.sql                Script SQL para crear la tabla en Supabase
 .github/workflows/deploy.yml  Workflow que inyecta secretos y despliega a GitHub Pages
 ```
@@ -140,6 +142,22 @@ Formulario con los 5 campos solicitados:
 
 Al guardar, el formulario se limpia y la fecha vuelve a fijarse en el día
 actual para agilizar el registro de múltiples productos.
+
+### Carga masiva (`carga-masiva.html`)
+
+Permite registrar muchos productos a la vez mediante un archivo Excel:
+
+- **Descargar plantilla**: genera un `.xlsx` (con [SheetJS](https://sheetjs.com),
+  cargado desde CDN) con las columnas `FECHA`, `CANTIDAD`, `EMPRESA`,
+  `DESCRIPCION`, `PRECIO_COMPRA` y `PRECIO_VENTA`, más una fila de ejemplo.
+- **Subir Excel**: lee el archivo seleccionado (`.xlsx`/`.xls`), valida cada
+  fila (cantidad y precio de compra numéricos, empresa/descripción no vacías,
+  fecha opcional con valor por defecto igual al día actual, precio de venta
+  opcional) e inserta en Supabase solo las filas válidas, en lotes de hasta
+  500 registros.
+- Al finalizar muestra un resumen con la cantidad de productos insertados y
+  el detalle de los errores por fila (si los hay), sin bloquear la inserción
+  del resto de filas válidas.
 
 ### Moneda
 

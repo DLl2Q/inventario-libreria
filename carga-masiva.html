@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carga masiva</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="btn" href="index.html">&larr; Volver al inventario</a>
+    <h1>Carga masiva de productos</h1>
+    <button id="logout-btn" class="btn" type="button">Cerrar sesión</button>
+  </header>
+
+  <main class="container">
+    <section class="form-card upload-card">
+      <div class="form-group">
+        <label>1. Descarga la plantilla de Excel</label>
+        <p class="upload-hint">
+          Completa una fila por producto. Las columnas <strong>CANTIDAD</strong>,
+          <strong>EMPRESA</strong>, <strong>DESCRIPCION</strong> y
+          <strong>PRECIO_COMPRA</strong> son obligatorias. <strong>FECHA</strong> y
+          <strong>PRECIO_VENTA</strong> son opcionales.
+        </p>
+        <button id="download-template-btn" class="btn btn-primary" type="button">
+          Descargar plantilla (Excel)
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="excel-file">2. Sube el Excel con los datos</label>
+        <input type="file" id="excel-file" accept=".xlsx,.xls" />
+      </div>
+
+      <div id="upload-message" class="form-message" role="status"></div>
+
+      <button id="upload-btn" class="btn btn-primary" type="button" disabled>
+        Subir productos
+      </button>
+
+      <div id="upload-results" class="upload-results" hidden>
+        <h2>Resultado de la carga</h2>
+        <p id="upload-summary"></p>
+        <ul id="upload-errors" class="upload-errors"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/carga-masiva.js"></script>
+</body>
+</html>
