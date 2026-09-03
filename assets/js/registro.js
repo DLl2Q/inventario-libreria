@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient.js';
 import { todayISO } from './utils.js';
+import { requireAuth, setupLogout } from './auth.js';
+
+await requireAuth();
+setupLogout();
 
 const form = document.getElementById('form-producto');
 const fechaInput = document.getElementById('fecha');

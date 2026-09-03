@@ -9,7 +9,10 @@
 <body>
   <header class="topbar">
     <h1>Panel de Inventario</h1>
-    <a class="btn btn-primary" href="registro.html">+ Registrar producto</a>
+    <div class="topbar-actions">
+      <a class="btn btn-primary" href="registro.html">+ Registrar producto</a>
+      <button id="logout-btn" class="btn" type="button">Cerrar sesión</button>
+    </div>
   </header>
 
   <main class="container">
@@ -34,6 +37,7 @@
               <th>PRECIO UNITARIO</th>
               <th>PRECIO VENTA</th>
               <th>MARGEN</th>
+              <th>ACCIONES</th>
             </tr>
           </thead>
           <tbody id="tabla-body"></tbody>

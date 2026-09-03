@@ -2,21 +2,26 @@
 
 Aplicación web estática (HTML/CSS/JS, sin build) para registrar productos comprados
 y consultar un panel de inventario con precio unitario, precio de venta y margen,
-usando [Supabase](https://supabase.com) como base de datos. Pensada para publicarse
-en GitHub Pages.
+usando [Supabase](https://supabase.com) como base de datos. Se publica en
+GitHub Pages mediante un workflow de GitHub Actions que inyecta la configuración
+desde los **Secrets** del repositorio.
 
 ## Estructura
 
 ```
-index.html              Panel de inventario (página por defecto)
-registro.html            Formulario para registrar un producto comprado
-assets/css/style.css     Estilos
-assets/js/config.js      Credenciales de Supabase (editar aquí)
+index.html                   Panel de inventario (página por defecto, protegida por login)
+registro.html                Formulario para registrar un producto comprado (protegida por login)
+login.html                   Página de acceso (contraseña pública del sitio)
+assets/css/style.css         Estilos
+assets/js/config.js          Placeholders de Supabase y hash de contraseña (se completan en el deploy)
 assets/js/supabaseClient.js  Cliente de Supabase
-assets/js/utils.js       Formateo de moneda (soles), fechas y helpers
-assets/js/inventario.js  Lógica del panel de inventario (búsqueda, paginación, edición de precio de venta)
-assets/js/registro.js    Lógica del formulario de registro
-sql/schema.sql           Script SQL para crear la tabla en Supabase
+assets/js/utils.js           Formateo de moneda (soles), fechas, helpers y hash SHA-256
+assets/js/auth.js            Guardia de autenticación y logout, compartidos por las páginas
+assets/js/login.js           Lógica de la página de acceso
+assets/js/inventario.js      Lógica del panel de inventario (búsqueda, paginación, edición de precio de venta, borrado)
+assets/js/registro.js        Lógica del formulario de registro
+sql/schema.sql                Script SQL para crear la tabla en Supabase
+.github/workflows/deploy.yml  Workflow que inyecta secretos y despliega a GitHub Pages
 ```
 
 ## 1. Crear el backend en Supabase
@@ -24,25 +29,65 @@ sql/schema.sql           Script SQL para crear la tabla en Supabase
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Ve a **SQL Editor** y ejecuta el contenido de [`sql/schema.sql`](sql/schema.sql).
    Esto crea la tabla `productos`, índices para búsquedas rápidas (soporta miles
-   de registros) y políticas de RLS que permiten lectura/escritura desde el
-   frontend público.
+   de registros) y políticas de RLS que permiten lectura/escritura/borrado desde
+   el frontend público.
 3. Ve a **Settings > API** y copia:
    - `Project URL`
    - `anon public key`
 
-## 2. Configurar el frontend
+## 2. Configurar el repositorio en GitHub
 
-Edita `assets/js/config.js` y reemplaza los valores:
+### 2.1 Nombre del repositorio (ruta de la app)
 
-```js
-export const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-export const SUPABASE_ANON_KEY = 'TU-ANON-KEY';
+La ruta de un GitHub Pages de proyecto es siempre `https://<usuario>.github.io/<nombre-del-repo>/`.
+Para que la app quede en `/inventario_libreria/`, el repositorio debe llamarse
+exactamente `inventario_libreria`. Si no se llama así, renómbralo en
+**GitHub > Settings > (general, arriba) > Repository name**.
+
+Después de renombrarlo, actualiza el remoto local (ya está hecho en este entorno,
+pero por si clonas de nuevo):
+
+```bash
+git remote set-url origin https://github.com/<usuario>/inventario_libreria.git
 ```
 
-No se necesita ningún paso de build: el proyecto usa el cliente de Supabase
-directamente desde un CDN (`esm.sh`) mediante ES Modules.
+### 2.2 Secrets del repositorio
 
-## 3. Probar en local
+Ve a **Settings > Secrets and variables > Actions > New repository secret** y crea:
+
+| Secret               | Valor                                              |
+|----------------------|-----------------------------------------------------|
+| `SUPABASE_URL`       | Project URL de Supabase                            |
+| `SUPABASE_ANON_KEY`  | anon public key de Supabase                        |
+| `LOGIN_PASSWORD`     | Contraseña para acceder al sitio (texto plano)      |
+
+El workflow calcula un **hash SHA-256** de `LOGIN_PASSWORD` en el momento del
+deploy y lo inyecta en el sitio; la contraseña en texto plano nunca se sube al
+repositorio ni queda visible en el código publicado.
+
+### 2.3 Habilitar GitHub Pages con GitHub Actions
+
+Ve a **Settings > Pages > Build and deployment > Source** y selecciona
+**GitHub Actions**.
+
+## 3. Desplegar
+
+Cada `push` a `master`/`main` ejecuta `.github/workflows/deploy.yml`, que:
+
+1. Reemplaza los placeholders `__SUPABASE_URL__`, `__SUPABASE_ANON_KEY__` y
+   `__LOGIN_PASSWORD_HASH__` de `assets/js/config.js` con los valores de los
+   secrets (la contraseña se reemplaza ya hasheada).
+2. Publica el sitio en GitHub Pages, disponible en
+   `https://<usuario>.github.io/inventario_libreria/`.
+
+También puede lanzarse manualmente desde **Actions > Deploy a GitHub Pages > Run workflow**.
+
+## 4. Probar en local
+
+Para desarrollo local, completa temporalmente `assets/js/config.js` con las
+credenciales reales de Supabase (y opcionalmente un hash de contraseña, o deja
+`__LOGIN_PASSWORD_HASH__` para desactivar el login en local). **No hagas commit**
+de esos valores.
 
 Al usar módulos ES, el navegador requiere servir los archivos por HTTP (no
 `file://`). Cualquier servidor estático funciona, por ejemplo:
@@ -53,17 +98,15 @@ npx serve .
 
 y abre `http://localhost:3000`.
 
-## 4. Publicar en GitHub Pages
-
-1. Sube este proyecto a un repositorio de GitHub.
-2. Ve a **Settings > Pages**.
-3. En **Source**, selecciona la rama principal (`main`) y la carpeta raíz (`/`).
-4. Guarda. GitHub publicará el sitio en `https://<usuario>.github.io/<repositorio>/`.
-
-Como `index.html` es el panel de inventario, esa será la página que se muestra
-por defecto.
-
 ## Funcionalidad
+
+### Acceso (`login.html`)
+
+- El sitio es público pero requiere una contraseña (secret `LOGIN_PASSWORD`)
+  para entrar. Al validarse, la sesión se guarda en `sessionStorage` (se pide
+  de nuevo al cerrar el navegador o al pulsar "Cerrar sesión").
+- Si no se configura el secret `LOGIN_PASSWORD`, el sitio queda sin protección
+  (útil para desarrollo local).
 
 ### Panel de inventario (`index.html`, página por defecto)
 
@@ -80,6 +123,8 @@ por defecto.
     guarda automáticamente en Supabase.
   - `MARGEN` = `PRECIO VENTA - PRECIO UNITARIO` (se recalcula al editar el
     precio de venta).
+  - `ACCIONES`: botón **"Borrar"** que elimina el producto de Supabase tras
+    confirmación.
 - Botón **"+ Registrar producto"** que redirige a `registro.html`.
 
 ### Registro de productos (`registro.html`)
@@ -103,8 +148,12 @@ Todos los montos se muestran en **soles peruanos (PEN)** usando
 
 ## Notas de seguridad
 
-Las políticas de RLS del script SQL son públicas (cualquier persona con la
-`anon key` puede leer/insertar/actualizar) porque el frontend no implementa
-autenticación. Si el inventario contiene información sensible, se recomienda
-añadir Supabase Auth y restringir las políticas por usuario antes de exponer
-el sitio públicamente.
+- Las políticas de RLS del script SQL son públicas (cualquier persona con la
+  `anon key` puede leer/insertar/actualizar/borrar) porque el frontend no
+  implementa autenticación de usuarios individuales, solo una contraseña
+  compartida para el sitio.
+- La protección por contraseña es una barrera **del lado del cliente**: útil
+  para evitar accesos casuales, pero no es equivalente a autenticación real de
+  backend. Cualquiera que conozca la contraseña (o intercepte el hash y logre
+  invertirlo) puede acceder. Si el inventario contiene información sensible,
+  se recomienda migrar a Supabase Auth con políticas de RLS por usuario.

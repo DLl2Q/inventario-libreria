@@ -36,3 +36,6 @@ create policy "Permitir insercion publica" on productos
 
 create policy "Permitir actualizacion publica" on productos
   for update using (true);
+
+create policy "Permitir eliminacion publica" on productos
+  for delete using (true);

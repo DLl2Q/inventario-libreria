@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient.js';
 import { formatCurrency, formatDate, debounce, escapeHtml } from './utils.js';
+import { requireAuth, setupLogout } from './auth.js';
+
+await requireAuth();
+setupLogout();
 
 const PAGE_SIZE = 25;
 
@@ -41,7 +45,7 @@ async function loadProductos() {
 
   if (error) {
     console.error(error);
-    tbody.innerHTML = `<tr><td colspan="8">Error al cargar los datos: ${escapeHtml(error.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9">Error al cargar los datos: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
 
@@ -74,10 +78,12 @@ function renderRow(producto) {
     <td>${formatCurrency(precioUnitario)}</td>
     <td class="col-venta"></td>
     <td class="col-margen">${margenInicial != null ? formatCurrency(margenInicial) : '-'}</td>
+    <td class="col-acciones"></td>
   `;
 
   const ventaCell = tr.querySelector('.col-venta');
   const margenCell = tr.querySelector('.col-margen');
+  const accionesCell = tr.querySelector('.col-acciones');
 
   const input = document.createElement('input');
   input.type = 'number';
@@ -116,6 +122,37 @@ function renderRow(producto) {
   });
 
   ventaCell.appendChild(input);
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'btn btn-danger btn-delete';
+  deleteBtn.textContent = 'Borrar';
+
+  deleteBtn.addEventListener('click', async () => {
+    const confirmado = confirm(`¿Eliminar "${producto.descripcion}" del inventario?`);
+    if (!confirmado) return;
+
+    deleteBtn.disabled = true;
+    const { error: deleteError } = await supabase
+      .from('productos')
+      .delete()
+      .eq('id', producto.id);
+
+    if (deleteError) {
+      alert('No se pudo eliminar el producto: ' + deleteError.message);
+      deleteBtn.disabled = false;
+      return;
+    }
+
+    tr.remove();
+    totalCount = Math.max(0, totalCount - 1);
+    updatePagination();
+    if (tbody.children.length === 0) {
+      loadProductos();
+    }
+  });
+
+  accionesCell.appendChild(deleteBtn);
   tbody.appendChild(tr);
 }
 
