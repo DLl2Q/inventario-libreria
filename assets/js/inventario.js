@@ -62,35 +62,130 @@ async function loadProductos() {
 }
 
 function renderRow(producto) {
-  const cantidad = Number(producto.cantidad) || 0;
-  const precioCompra = Number(producto.precio_compra) || 0;
-  const precioUnitario = cantidad > 0 ? precioCompra / cantidad : 0;
   const ventaInicial = producto.precio_venta != null ? Number(producto.precio_venta) : null;
-  const margenInicial = ventaInicial != null ? ventaInicial - precioUnitario : null;
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${formatDate(producto.fecha)}</td>
-    <td>${cantidad}</td>
-    <td>${escapeHtml(producto.empresa)}</td>
-    <td>${escapeHtml(producto.descripcion)}</td>
-    <td>${formatCurrency(precioCompra)}</td>
-    <td>${formatCurrency(precioUnitario)}</td>
+    <td class="col-cantidad"></td>
+    <td class="col-empresa"></td>
+    <td class="col-descripcion"></td>
+    <td class="col-compra"></td>
+    <td class="col-unitario"></td>
     <td class="col-venta"></td>
-    <td class="col-margen">${margenInicial != null ? formatCurrency(margenInicial) : '-'}</td>
+    <td class="col-margen"></td>
     <td class="col-acciones"></td>
   `;
 
+  const cantidadCell = tr.querySelector('.col-cantidad');
+  const empresaCell = tr.querySelector('.col-empresa');
+  const descripcionCell = tr.querySelector('.col-descripcion');
+  const compraCell = tr.querySelector('.col-compra');
+  const unitarioCell = tr.querySelector('.col-unitario');
   const ventaCell = tr.querySelector('.col-venta');
   const margenCell = tr.querySelector('.col-margen');
   const accionesCell = tr.querySelector('.col-acciones');
+
+  function updateCalculatedCells() {
+    const cantidad = Number(producto.cantidad) || 0;
+    const precioCompra = Number(producto.precio_compra) || 0;
+    const precioUnitario = cantidad > 0 ? precioCompra / cantidad : 0;
+    const precioVenta = producto.precio_venta != null ? Number(producto.precio_venta) : null;
+
+    unitarioCell.textContent = formatCurrency(precioUnitario);
+    margenCell.textContent = precioVenta != null
+      ? formatCurrency(precioVenta - precioUnitario)
+      : '-';
+  }
+
+  function createEditableInput({ field, type = 'text', value, step, min, className, parseValue, validate, errorMessage }) {
+    const input = type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+    if (type !== 'textarea') input.type = type;
+    input.step = step ?? '';
+    input.min = min ?? '';
+    input.className = className;
+    input.value = value ?? '';
+    if (type === 'textarea') input.rows = 2;
+
+    input.addEventListener('change', async () => {
+      const rawValue = input.value.trim();
+      const parsedValue = parseValue(rawValue);
+
+      if (!validate(parsedValue, rawValue)) {
+        alert(errorMessage);
+        input.value = producto[field] ?? '';
+        return;
+      }
+
+      input.disabled = true;
+      const { error } = await supabase
+        .from('productos')
+        .update({ [field]: parsedValue })
+        .eq('id', producto.id);
+      input.disabled = false;
+
+      if (error) {
+        alert(`No se pudo actualizar ${field}: ${error.message}`);
+        input.value = producto[field] ?? '';
+        return;
+      }
+
+      producto[field] = parsedValue;
+      updateCalculatedCells();
+    });
+
+    return input;
+  }
+
+  cantidadCell.appendChild(createEditableInput({
+    field: 'cantidad',
+    type: 'number',
+    value: producto.cantidad,
+    step: '0.01',
+    min: '0.01',
+    className: 'editable-input number-input',
+    parseValue: Number,
+    validate: (value) => Number.isFinite(value) && value > 0,
+    errorMessage: 'La cantidad debe ser un número mayor que 0.',
+  }));
+
+  empresaCell.appendChild(createEditableInput({
+    field: 'empresa',
+    value: producto.empresa,
+    className: 'editable-input text-input',
+    parseValue: (value) => value,
+    validate: (value) => Boolean(value),
+    errorMessage: 'La empresa es obligatoria.',
+  }));
+
+  descripcionCell.appendChild(createEditableInput({
+    field: 'descripcion',
+    type: 'textarea',
+    value: producto.descripcion,
+    className: 'editable-input description-input',
+    parseValue: (value) => value,
+    validate: (value) => Boolean(value),
+    errorMessage: 'La descripción es obligatoria.',
+  }));
+
+  compraCell.appendChild(createEditableInput({
+    field: 'precio_compra',
+    type: 'number',
+    value: producto.precio_compra,
+    step: '0.01',
+    min: '0',
+    className: 'editable-input number-input',
+    parseValue: Number,
+    validate: (value) => Number.isFinite(value) && value >= 0,
+    errorMessage: 'El precio de compra debe ser un número mayor o igual a 0.',
+  }));
 
   const input = document.createElement('input');
   input.type = 'number';
   input.step = '0.01';
   input.min = '0';
   input.placeholder = '0.00';
-  input.className = 'venta-input';
+  input.className = 'editable-input number-input';
   input.value = ventaInicial ?? '';
 
   input.addEventListener('change', async () => {
@@ -117,11 +212,11 @@ function renderRow(producto) {
     }
 
     producto.precio_venta = nuevoValor;
-    const nuevoMargen = nuevoValor != null ? nuevoValor - precioUnitario : null;
-    margenCell.textContent = nuevoMargen != null ? formatCurrency(nuevoMargen) : '-';
+    updateCalculatedCells();
   });
 
   ventaCell.appendChild(input);
+  updateCalculatedCells();
 
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';

@@ -39,9 +39,10 @@ body {
 }
 
 .container {
-  max-width: 1100px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .btn {
@@ -116,6 +117,7 @@ body {
 }
 
 .table-panel {
+  width: 100%;
   background-color: var(--color-card);
   border-radius: var(--radius);
   padding: 1rem;
@@ -123,6 +125,7 @@ body {
 }
 
 .table-wrapper {
+  width: 100%;
   overflow-x: auto;
 }
 
@@ -130,8 +133,33 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  min-width: 900px;
+  min-width: 1120px;
+  table-layout: fixed;
 }
+
+th:nth-child(1),
+td:nth-child(1) { width: 95px; }
+
+th:nth-child(2),
+td:nth-child(2) { width: 110px; }
+
+th:nth-child(3),
+td:nth-child(3) { width: 170px; }
+
+th:nth-child(4),
+td:nth-child(4) { width: 260px; }
+
+th:nth-child(5),
+td:nth-child(5),
+th:nth-child(6),
+td:nth-child(6),
+th:nth-child(7),
+td:nth-child(7),
+th:nth-child(8),
+td:nth-child(8) { width: 135px; }
+
+th:nth-child(9),
+td:nth-child(9) { width: 100px; }
 
 thead th {
   text-align: left;
@@ -144,19 +172,42 @@ thead th {
 tbody td {
   padding: 0.55rem 0.7rem;
   border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+tbody td:first-child,
+tbody td:nth-child(6),
+tbody td:nth-child(8) {
   white-space: nowrap;
+}
+
+.editable-input {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font: inherit;
+  color: inherit;
+  background-color: #fff;
+}
+
+.editable-input:focus {
+  outline: 2px solid rgba(29, 111, 66, 0.25);
+  border-color: var(--color-primary);
+}
+
+.number-input {
+  min-width: 0;
+}
+
+.description-input {
+  min-height: 3.4rem;
+  resize: vertical;
+  overflow-wrap: anywhere;
 }
 
 tbody tr:hover {
   background-color: #f8fafc;
-}
-
-.venta-input {
-  width: 110px;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 0.9rem;
 }
 
 .btn-delete {
@@ -256,6 +307,14 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .table-panel {
+    padding: 0.75rem;
+  }
+
   .topbar {
     flex-direction: column;
     align-items: flex-start;
